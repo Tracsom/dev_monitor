@@ -14,4 +14,5 @@ __all__ = [
     "DeviceListWidget",
     "UICommands",
     "UIEventHandlers",
+    "ProgressManager",
 ]

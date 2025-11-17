@@ -8,6 +8,7 @@ from typing import Callable, Optional
 from tkinter import Tk, StringVar
 from src.bus import Scheduler
 from src.ui.dialogue_manager import DialogManager
+from src.ui.progress_manager import ProgressManager
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +22,8 @@ class UICommands:
         parent: Tk,
         status_var: StringVar,
         refresh_callback: Callable,
+        progress_manager: Optional["ProgressManager"] = None,
+        disable_buttons_callback: Optional[Callable[[bool], None]] = None
     ):
         """
         Initialize command handler.
@@ -30,11 +33,15 @@ class UICommands:
             parent: Parent tkinter window
             status_var: StringVar for status display
             refresh_callback: Function to refresh device list
+            progress_manager: Optional progess manager for feedback
+            disable_buttons_callback: Optional callback to disable/enable buttons
         """
         self.scheduler = scheduler
         self.parent = parent
         self.status_var = status_var
         self.refresh_callback = refresh_callback
+        self.progress_manager = progress_manager
+        self.disable_buttons_callback = disable_buttons_callback
 
     def add_device(self) -> None:
         """Handle add device command."""
@@ -70,14 +77,25 @@ class UICommands:
 
     def check_all(self) -> None:
         """Handle check all devices command."""
-
         def worker():
+            # show progress and disable buttons
+            if self.progress_manager:
+                self.parent.after(
+                    10,
+                    lambda: self.progress_manager.show("Checking all devices..."),
+                )
+            if self.disable_buttons_callback:
+                self.parent.after(10, lambda: self.disable_buttons_callback(True))
+
             self.status_var.set("Checking devices...")
             self.scheduler.publish("check_all_devices")
-            if self.parent:
-                self.parent.after(
-                    50, lambda: self.status_var.set("Check complete")
-                )
+            
+            # Hide progress and re-enable buttons when done
+            if self.progress_manager:
+                self.parent.after(50, lambda: self.progress_manager.hide())
+            if self.disable_buttons_callback:
+                self.parent.after(50, lambda: self.disable_buttons_callback(False))
+            self.parent.after(50, lambda: self.status_var.set("Check complete"))
 
         threading.Thread(target=worker, daemon=True).start()
 
