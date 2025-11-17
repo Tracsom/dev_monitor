@@ -20,6 +20,12 @@ class Config:
     DEFAULT_TIMEOUT = 5
     DEFAULT_CHECK_INTERVAL = 300  # 5 minutes
 
+    # Fallback/network probes
+    # Order of ports to try after device.port (don't duplicate device.port)
+    FALLBACK_PORTS = [443, 80, 22, 8080]
+    # Ping timeout in seconds (used for system ping fallback)
+    PING_TIMEOUT = 2
+
     # Logging
     LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
     LOG_FORMAT = "[%(asctime)s] %(levelname)-8s %(name)s: %(message)s"

@@ -4,13 +4,15 @@ Service for managing devices and their status checks.
 """
 import logging
 import socket
+import subprocess
+import platform
 from typing import List, Optional
 from src.models import Device, DeviceRepository
+from src.config import Config
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
-
 
 class DeviceService:
     """Service for managing devices and checking their status."""
@@ -101,51 +103,93 @@ class DeviceService:
 
     def check_device_status(self, device: Device) -> bool:
         """
-        Check if a device is online by attempting a TCP connection.
+        Check if a device is online using:
+          1) TCP connect to device.port
+          2) TCP connect to fallback ports from Config.FALLBACK_PORTS
+          3) ICMP ping (system 'ping') as last resort
 
-        Args:
-            device: Device to check
-
-        Returns:
-            True if device is online, False otherwise
+        Updates device.is_online, device.last_checked and persists via repository.
         """
+        def tcp_probe(host: str, port: int, timeout: int) -> bool:
+            try:
+                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+                    sock.settimeout(timeout)
+                    return sock.connect_ex((host, port)) == 0
+            except Exception as e:
+                logger.debug("tcp_probe error for %s:%s -> %s", host, port, e)
+                return False
+            
+        def ping_probe(host: str, timeout: str) -> bool:
+            """
+            Use system ping as a last resort.
+            - Linux/macOS: ping -c 1 -W timeout
+            - Windows: ping -n 1 -w timeout_ms
+            """
+            try:
+                system = platform.system().lower()
+                if system == "windows":
+                    cmd = ["ping", "-n", "1", "-w", str(int(timeout * 1000)), host]
+                else:
+                    # use -c 1 (one packet) and -W for timeout (seconds)
+                    cmd = ["ping", "-c", "1", "-w", str(int(timeout)), host]
+                proc = subprocess.run(
+                    cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+                return proc.returncode == 0
+            except Exception as e:
+                logger.debug("ping_probe error for %s -> %s", host, e)
+                return False
+
         try:
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(device.timeout)
-            result = sock.connect_ex((device.ip_address, device.port))
-            sock.close()
+            host = device.ip_address
+            timeout = max(1, device.timeout or Config.DEFAULT_TIMEOUT)
 
-            is_online = result == 0
-            device.is_online = is_online
+            # 1) Try the device's configured port first
+            logger.debug("Checking %s on configured port: %s", device.name, device.port)
+            if tcp_probe(host, device.port, timeout):
+                device.is_online = True
+                device.last_checked = datetime.now().isoformat()
+                self.repository.update_device(device)
+                logger.info("Device %s is online (port %s)", device.name, device.port)
+                return True
+            
+            for p in Config.FALLBACK_PORTS:
+                if p == device.port:
+                    continue
+                logger.debug("Trying fallback port %s for %s", p, device.name)
+                if tcp_probe(host, p, timeout):
+                    device.is_online = True
+                    device.last_checked = datetime.now().isoformat()
+                    self.repository.update_device(device)
+                    logger.info(
+                        "Device %s is online (fallback port %s)", device.name, p
+                    )
+                    return True
+                
+            # 3) Final fallback: ICMP ping
+            logger.debug("Trying ping fallback %s", device.name)
+            if ping_probe(host, str(Config.PING_TIMEOUT)):
+                device.is_online = True
+                device.last_checked = datetime.now().isoformat()
+                self.repository.update_device(device)
+                logger.info("Device %s is reachable via ICMP ping", device.name)
+                return True
+            
+            # All probes failed
+            device.is_online = False
             device.last_checked = datetime.now().isoformat()
-
-            # Update in repository
             self.repository.update_device(device)
-
-            status_str = "online" if is_online else "offline"
-            logger.debug(f"Device {device.name} is {status_str}")
-
-            return is_online
-
-        except socket.gaierror as e:
-            logger.error(f"DNS resolution failed for {device.ip_address}: {e}")
-            device.is_online = False
-            device.last_checked = datetime.now().isoformat()
+            logger.info("Device %s appears offline (all probes failed)", device.name)
             return False
-
-        except socket.timeout:
-            logger.debug(
-                f"Connection timeout for {device.name} ({device.ip_address}:{device.port})"
-            )
-            device.is_online = False
-            device.last_checked = datetime.now().isoformat()
-            return False
-
+        
         except Exception as e:
-            logger.error(
-                f"Error checking device {device.name}: {e}", exc_info=True
-            )
+            logger.exception("Error checking device %s:%s", device.name, e)
             device.is_online = False
+            device.last_checked = datetime.now().isoformat()
+            try:
+                self.repository.update_device(device)
+            except Exception as e:
+                logger.exception("Failed to persist device status for %s", device.name)
             return False
 
     def check_all_devices(self) -> None:
