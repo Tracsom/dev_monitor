@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dev_monitor"
+version = "0.1.0"
+description = "Monitor the status of remote IP devices"
+requires-python = ">=3.9"
+dependencies = []
+
+[project.scripts]
+dev_monitor = "src.app:App.run"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
