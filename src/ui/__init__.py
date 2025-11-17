@@ -8,4 +8,10 @@ from src.ui.device_list_widget import DeviceListWidget
 from src.ui.ui_commands import UICommands
 from src.ui.ui_event_handlers import UIEventHandlers
 
-__all__ = ["Interface", "DialogManager", "DeviceListWidget", "UICommands", "UIEventHandlers"]
+__all__ = [
+    "Interface",
+    "DialogManager",
+    "DeviceListWidget",
+    "UICommands",
+    "UIEventHandlers",
+]

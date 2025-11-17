@@ -11,8 +11,8 @@ from src.config import Config
 
 logger = logging.getLogger(__name__)
 
-class App:
 
+class App:
     def __init__(self, debug: bool = False):
         """
         Initialize the individual parts of the app and combine them.
@@ -26,7 +26,9 @@ class App:
         self.controller = MainController(self.scheduler)
         # background scheduler service (manages repeating tasks)
         self.scheduler_service = SchedulerService()
-        self.ui = Interface(self.scheduler, shutdown_callback=self.scheduler_service.stop)
+        self.ui = Interface(
+            self.scheduler, shutdown_callback=self.scheduler_service.stop
+        )
         logger.info("Application initialized successfully")
 
     def run(self):
@@ -48,9 +50,9 @@ class App:
                 self.scheduler_service.schedule_repeating(
                     "auto_check",
                     lambda: self.scheduler.publish("check_all_devices"),
-                    Config.DEFAULT_CHECK_INTERVAL
+                    Config.DEFAULT_CHECK_INTERVAL,
                 )
-            
+
             # UI mainloop (blocks until window closed)
             self.ui.launch(debug=self.debug)
         except Exception as e:

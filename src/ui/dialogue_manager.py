@@ -9,6 +9,7 @@ from typing import Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
+
 class DialogManager:
     """Manages all dialog interactions."""
 
@@ -23,37 +24,41 @@ class DialogManager:
         Returns:
             Tuple of (name, ip, port, timeout) or None if cancelled
         """
-        name = simpledialog.askstring("Device Name", "Enter device name", parent=parent)
+        name = simpledialog.askstring(
+            "Device Name", "Enter device name", parent=parent
+        )
         if not name:
             return None
-        
-        ip = simpledialog.askstring("IP address", "Enter device IP address:", parent=parent)
+
+        ip = simpledialog.askstring(
+            "IP address", "Enter device IP address:", parent=parent
+        )
         if not ip:
             return None
-        
+
         port = simpledialog.askinteger(
             "Port",
             "Enter a port (1-65535):",
             parent=parent,
             initialvalue=80,
             minvalue=1,
-            maxvalue=65535
+            maxvalue=65535,
         )
         if port is None:
             return None
-        
+
         timeout = simpledialog.askinteger(
             "Timeout",
-            "Enter timeout seconds:", 
+            "Enter timeout seconds:",
             parent=parent,
             initialvalue=5,
-            minvalue=1
+            minvalue=1,
         )
         if timeout is None:
             return None
-        
+
         return (name, ip, port, timeout)
-    
+
     @staticmethod
     def confirm_remove(parent: Tk, device_name: str) -> bool:
         """
@@ -67,11 +72,9 @@ class DialogManager:
             True if user confirmed, False otherwise
         """
         return messagebox.askyesno(
-            "Confirm remove",
-            f"Remove device: {device_name}?",
-            parent=parent
+            "Confirm remove", f"Remove device: {device_name}?", parent=parent
         )
-    
+
     @staticmethod
     def show_success(parent: Tk, title: str, message: str) -> None:
         """

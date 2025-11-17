@@ -9,6 +9,7 @@ from src.bus.event import Event
 
 logger = logging.getLogger(__name__)
 
+
 class Scheduler:
     """Event bus for application communication."""
 
@@ -29,12 +30,14 @@ class Scheduler:
         """
         if not callable(callback):
             raise TypeError(f"callback must be callable, got {type(callback)}")
-        
+
         event = Event(event_name, callback)
         self._events.append(event)
         logger.debug(f"Subscribed to event: {event_name}")
 
-    def unsubscribe(self, event_name: str, callback: Callable[..., Any]) -> bool:
+    def unsubscribe(
+        self, event_name: str, callback: Callable[..., Any]
+    ) -> bool:
         """
         Unsubscribe from an event.
 
@@ -47,7 +50,8 @@ class Scheduler:
         """
         original_count = len(self._events)
         self._events = [
-            e for e in self._events
+            e
+            for e in self._events
             if not (e.name == event_name and e.callback == callback)
         ]
         removed = len(self._events) < original_count
@@ -69,12 +73,14 @@ class Scheduler:
         """
         results: List[Any] = []
         matching_events = [e for e in self._events if e.name == event_name]
-        
+
         if not matching_events:
             logger.debug(f"Event published with no subscribers: {event_name}")
             return results
-        
-        logger.debug(f"Publishing event: {event_name} to {len(matching_events)} subscriber(s)")
+
+        logger.debug(
+            f"Publishing event: {event_name} to {len(matching_events)} subscriber(s)"
+        )
 
         for event in matching_events:
             try:
@@ -83,10 +89,10 @@ class Scheduler:
             except Exception as e:
                 logger.error(
                     f"Error in event callback for {event_name}: {e}",
-                    exc_info=True
+                    exc_info=True,
                 )
 
         return results
-    
+
     def __repr__(self) -> str:
         return f"Scheduler(events={len(self._events)})"

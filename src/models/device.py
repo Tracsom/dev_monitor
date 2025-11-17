@@ -5,9 +5,8 @@ Device model for representing monitored IP devices.
 from dataclasses import dataclass, asdict
 from typing import Optional
 from datetime import datetime
-import json
 from src.utils.validators import DeviceValidator
-from src.exceptions import ValidationError
+
 
 @dataclass
 class Device:
@@ -28,7 +27,7 @@ class Device:
         self.ip_address = DeviceValidator.validate_ip_address(self.ip_address)
         self.port = DeviceValidator.validate_port(self.port)
         self.timeout = DeviceValidator.validate_timeout(self.timeout)
-            
+
         if self.created_at is None:
             self.created_at = datetime.now().isoformat()
 
@@ -40,7 +39,16 @@ class Device:
     def from_dict(cls, data: dict) -> "Device":
         """Create a Device instance from a dictionary."""
         return cls(**data)
-    
+
     def __repr__(self) -> str:
-        status = "Online" if self.is_online else "Offline" if self.is_online is False else "Unknown"
-        return f"Device (name={self.name}, ip_address={self.ip_address}, status={status})"
+        status = (
+            "Online"
+            if self.is_online
+            else "Offline"
+            if self.is_online is False
+            else "Unknown"
+        )
+        return (
+            f"Device (name={self.name}, ip_address={self.ip_address}, "
+            f"status={status})"
+        )

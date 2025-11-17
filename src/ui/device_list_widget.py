@@ -10,6 +10,7 @@ from src.models import Device
 
 logger = logging.getLogger(__name__)
 
+
 class DeviceListWidget(Frame):
     """Custom widget for displaying devices in a scrollable list."""
 
@@ -28,7 +29,9 @@ class DeviceListWidget(Frame):
         self.listbox = Listbox(self, height=height, width=width)
         self.listbox.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
 
-        scrollbar = Scrollbar(self, orient="vertical", command=self.listbox.yview)
+        scrollbar = Scrollbar(
+            self, orient="vertical", command=self.listbox.yview
+        )
         scrollbar.grid(row=0, column=1, sticky="ns")
         self.listbox.config(yscrollcommand=scrollbar.set)
 
@@ -58,11 +61,11 @@ class DeviceListWidget(Frame):
         selection = self.listbox.curselection()
         if not selection:
             return None
-        
+
         line = self.listbox.get(selection[0])
         parts = line.split(" - ")
         return parts[0] if parts else None
-    
+
     def bind_double_click(self, callback: Callable) -> None:
         """
         Bind callback to double-click event.
@@ -75,5 +78,14 @@ class DeviceListWidget(Frame):
     @staticmethod
     def _format_device_line(device: Device) -> str:
         """Format device for display in list."""
-        status = "Online" if device.is_online else "Offline" if device.is_online is False else "Unknown"
-        return f"{device.name} - {device.ip_address}:{device.port} - {status} - Last checked: {device.last_checked or 'never'}"
+        status = (
+            "Online"
+            if device.is_online
+            else "Offline"
+            if device.is_online is False
+            else "Unknown"
+        )
+        return (
+            f"{device.name} - {device.ip_address}:{device.port} - {status} - "
+            f"Last checked: {device.last_checked or 'never'}"
+        )

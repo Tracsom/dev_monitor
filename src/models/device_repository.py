@@ -13,6 +13,7 @@ import threading
 
 logger = logging.getLogger(__name__)
 
+
 class DeviceRepository:
     """Handles persistence of devices to JSON file storage."""
 
@@ -28,7 +29,9 @@ class DeviceRepository:
         self.storage_path = storage_path or self.DEFAULT_STORAGE_PATH
         self._lock = threading.Lock()
         self._ensure_storage_directory()
-        logger.info(f"DeviceRepository initialized with storage path: {self.storage_path}")
+        logger.info(
+            f"DeviceRepository initialized with storage path: {self.storage_path}"
+        )
 
     def _ensure_storage_directory(self):
         """Create storage directory if it doesn't exist."""
@@ -40,27 +43,34 @@ class DeviceRepository:
         """
         with self._lock:
             if not self.storage_path.exists():
-                logger.info(f"No devices file found at {self.storage_path}, return empty list")
+                logger.info(
+                    f"No devices file at {self.storage_path}"
+                )
                 return []
-            
+
             try:
-                with open(self.storage_path, 'r', encoding="utf-8") as f:
+                with open(self.storage_path, "r", encoding="utf-8") as f:
                     data = json.load(f)
 
-                devices = [Device.from_dict(device_data) for device_data in data]
+                devices = [
+                    Device.from_dict(device_data) for device_data in data
+                ]
                 logger.info(f"Loaded {len(devices)} devices from storage")
                 return devices
             except json.JSONDecodeError as e:
-                logger.error(f"Error decoding JSON from {self.storage_path}: {e}", exc_info=True)
+                logger.error(
+                    f"Error decoding JSON from {self.storage_path}: {e}",
+                    exc_info=True,
+                )
                 return []
             except Exception as e:
                 logger.error(f"Error loading devices: {e}", exc_info=True)
                 return []
-        
+
     def save_all(self, devices: List[Device]) -> bool:
         """
         Save all devices to storage.
-        
+
         Args:
             devices: List of Device objects to save
 
@@ -87,7 +97,7 @@ class DeviceRepository:
             except Exception:
                 pass
             return False
-        
+
     def add_device(self, device: Device) -> bool:
         """
         Add a single device to storage.
@@ -101,7 +111,7 @@ class DeviceRepository:
         devices = self.load_all()
         devices.append(device)
         return self.save_all(devices)
-    
+
     def remove_device(self, device_name: str) -> bool:
         """
         Remove a device by name.
@@ -145,7 +155,7 @@ class DeviceRepository:
 
         logger.warning(f"Device not found for update: {device.name}")
         return False
-    
+
     def get_device(self, device_name: str) -> Optional[Device]:
         """
         Get a device by name.

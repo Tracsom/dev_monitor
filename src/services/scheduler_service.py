@@ -4,18 +4,17 @@ Background scheduler for periodic tasks.
 """
 import logging
 import threading
-import time
-from typing import Callable, Optional
-from src.config import Config
+from typing import Callable, Dict, Tuple
 
 logger = logging.getLogger(__name__)
+
 
 class SchedulerService:
     """Manages background scheduled tasks."""
 
     def __init__(self):
         """Initialize scheduler service."""
-        self._tasks: dict = {}
+        self._tasks: Dict[str, Tuple[threading.Thread, threading.Event]] = {}
         self._running = False
         self._lock = threading.Lock()
         # event used to request worker threads stop promptly
@@ -32,22 +31,29 @@ class SchedulerService:
         logger.info("Scheduler started")
 
     def stop(self) -> None:
-        """Stop the scheduler."""
+        """Stop all scheduled tasks and the scheduler service."""
         with self._lock:
             if not self._running:
                 return
             self._running = False
             self._stop_event.set()
-        # join selected threads to ensure clean shutdown
-        for name, thread in list(self._tasks.items()):
-            if thread.is_alive():
-                thread.join(timeout=2)
+
+        # signal each task to stop and join threads
+        for name, (thread, task_event) in list(self._tasks.items()):
+            try:
+                task_event.set()
+                if thread.is_alive():
+                    thread.join(timeout=2)
+            except Exception:
+                logger.exception("Error stopping scheduled task %s", name)
         self._tasks.clear()
         logger.info("Scheduler stopped")
 
-    def schedule_repeating(self, task_name: str, callback: Callable, interval: int) -> None:
+    def schedule_repeating(
+        self, task_name: str, callback: Callable, interval: int
+    ) -> None:
         """
-        Schedule repeating task.
+        Schedule repeating background task.
 
         Args:
             task_name: Unique task name
@@ -57,22 +63,35 @@ class SchedulerService:
         if task_name in self._tasks:
             logger.warning(f"Task already scheduled: {task_name}")
             return
-        
+
+        task_event = threading.Event()
+
         def worker():
-            logger.debug("Scheudled task %s started (interval=%s)", task_name, interval)
-            # run immediately then wait interval using stop_event.wait for responsiveness
-            while not self._stop_event.is_set() and self._running:
+            logger.debug(
+                "Scheudled task %s started (interval=%s)", task_name, interval
+            )
+            # execute once then wait using task_event.wait for responsiveness
+            while (
+                not self._stop_event.is_set()
+                and not task_event.is_set()
+                and self._running
+            ):
                 try:
                     callback()
                 except Exception as e:
-                    logger.error(f"Error in scheduled task {task_name}: {e}", exc_info=True)
-                # wait returns True if stop_event set (break early)
+                    logger.error(
+                        f"Error in scheduled task {task_name}: {e}",
+                        exc_info=True,
+                    )
+                # wait returns True if event is set (break early)
                 if self._stop_event.wait(timeout=interval):
                     break
             logger.debug("Scheduled task %s exiting", task_name)
 
-        thread = threading.Thread(target=worker, daemon=True, name=f"task-{task_name}")
-        self._tasks[task_name] = thread
+        thread = threading.Thread(
+            target=worker, daemon=True, name=f"task-{task_name}"
+        )
+        self._tasks[task_name] = (thread, task_event)
         thread.start()
         logger.info(f"Scheduled task: {task_name} (interval: {interval}s)")
 
@@ -83,6 +102,17 @@ class SchedulerService:
         Args:
             task_name: Task identifier
         """
-        if task_name in self._tasks:
-            del self._tasks[task_name]
-            logger.info(f"Unscheduled task: {task_name}")
+        entry = self._tasks.get(task_name)
+        if not entry:
+            logger.warning("Task not found to unschedule: %s", task_name)
+            return
+
+        thread, task_event = entry
+        task_event.set()
+        if thread.is_alive():
+            try:
+                thread.join(timeout=2)
+            except Exception:
+                logger.exception("Error joining task thread %s", task_name)
+        self._tasks.pop(task_name, None)
+        logger.info("Unscheduled task: %s", task_name)

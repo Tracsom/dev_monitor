@@ -6,13 +6,17 @@ import pytest
 from src.utils.validators import DeviceValidator
 from src.exceptions import ValidationError
 
+
 class TestDeviceValidator:
     """Test device validator."""
 
     def test_valid_device_name(self):
         """Test valid device names."""
         assert DeviceValidator.validate_device_name("router-1") == "router-1"
-        assert DeviceValidator.validate_device_name("server_prod.01") == "server_prod.01"
+        assert (
+            DeviceValidator.validate_device_name("server_prod.01")
+            == "server_prod.01"
+        )
 
     def test_invalid_device_name(self):
         """Test invalid device names."""
@@ -24,7 +28,9 @@ class TestDeviceValidator:
 
     def test_valid_ip(self):
         """Test valid IP addresses."""
-        assert DeviceValidator.validate_ip_address("192.168.1.1") == "192.168.1.1"
+        assert (
+            DeviceValidator.validate_ip_address("192.168.1.1") == "192.168.1.1"
+        )
 
     def test_invalid_ip(self):
         """Test invalid IP addresses."""

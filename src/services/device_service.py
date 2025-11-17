@@ -11,6 +11,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 logger = logging.getLogger(__name__)
 
+
 class DeviceService:
     """Service for managing devices and checking their status."""
 
@@ -38,8 +39,10 @@ class DeviceService:
             List of Device objects
         """
         return self.devices.copy()
-    
-    def add_device(self, name: str, ip_address: str, port: int = 80, timeout: int = 5) -> bool:
+
+    def add_device(
+        self, name: str, ip_address: str, port: int = 80, timeout: int = 5
+    ) -> bool:
         """
         Add a new device.
 
@@ -54,17 +57,16 @@ class DeviceService:
         """
         try:
             device = Device(
-                name=name,
-                ip_address=ip_address,
-                port=port,
-                timeout=timeout
+                name=name, ip_address=ip_address, port=port, timeout=timeout
             )
 
             # Check for duplicate names
             if any(d.name == name for d in self.devices):
-                logger.warning(f"Device with name {name!r} already exists")
+                logger.warning(
+                    f"Device with name {name!r} already exists"
+                )
                 return False
-            
+
             self.devices.append(device)
             success = self.repository.add_device(device)
 
@@ -78,7 +80,7 @@ class DeviceService:
         except Exception as e:
             logger.error(f"Error adding device: {e}", exc_info=True)
             return False
-        
+
     def remove_device(self, device_name: str) -> bool:
         """
         Remove a device.
@@ -96,7 +98,7 @@ class DeviceService:
             logger.info(f"Removed device: {device_name}")
 
         return success
-    
+
     def check_device_status(self, device: Device) -> bool:
         """
         Check if a device is online by attempting a TCP connection.
@@ -124,32 +126,42 @@ class DeviceService:
             logger.debug(f"Device {device.name} is {status_str}")
 
             return is_online
-        
+
         except socket.gaierror as e:
             logger.error(f"DNS resolution failed for {device.ip_address}: {e}")
             device.is_online = False
             device.last_checked = datetime.now().isoformat()
             return False
-        
+
         except socket.timeout:
-            logger.debug(f"Connection timeout for {device.name} ({device.ip_address}:{device.port})")
+            logger.debug(
+                f"Connection timeout for {device.name} ({device.ip_address}:{device.port})"
+            )
             device.is_online = False
             device.last_checked = datetime.now().isoformat()
             return False
-        
+
         except Exception as e:
-            logger.error(f"Error checking device {device.name}: {e}", exc_info=True)
+            logger.error(
+                f"Error checking device {device.name}: {e}", exc_info=True
+            )
             device.is_online = False
             return False
-        
+
     def check_all_devices(self) -> None:
         """Check status of all enabled devices."""
         enabled_devices = [d for d in self.devices if d.enabled]
-        logger.info(f"Checking status of {len(enabled_devices)} enabled devices")
+        logger.info(
+            f"Checking status of {len(enabled_devices)} enabled devices"
+        )
 
         # run checks in a threaded pool to improve responsiveness for many devices
-        with ThreadPoolExecutor(max_workers=min(32, max(2, len(enabled_devices)))) as ex:
-            futures = {ex.submit(self.check_device_status, d): d for d in enabled_devices}
+        max_workers = min(32, max(2, len(enabled_devices)))
+        with ThreadPoolExecutor(max_workers=max_workers) as ex:
+            futures = {
+                ex.submit(self.check_device_status, d): d
+                for d in enabled_devices
+            }
             for fut in as_completed(futures):
                 try:
                     fut.result()
@@ -170,9 +182,9 @@ class DeviceService:
             if device.name == device_name:
                 device.enabled = True
                 return self.repository.update_device(device)
-            
+
         return False
-    
+
     def disable_device(self, device_name: str) -> bool:
         """
         Disable a device from monitoring.
@@ -187,5 +199,5 @@ class DeviceService:
             if device.name == device_name:
                 device.enabled = False
                 return self.repository.update_device(device)
-            
+
         return False

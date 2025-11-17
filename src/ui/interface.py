@@ -4,8 +4,12 @@ Main UI interface using tkinter
 """
 import logging
 from tkinter import Tk, StringVar
-from tkinter.ttk import Frame as TtkFrame, Button as TtkButton, Label as TtkLabel
-from typing import Optional, List, Callable, cast
+from tkinter.ttk import (
+    Frame as TtkFrame,
+    Button as TtkButton,
+    Label as TtkLabel,
+)
+from typing import Optional, List, Callable
 from src.bus import Scheduler
 from src.models import Device
 from src.ui.device_list_widget import DeviceListWidget
@@ -14,10 +18,15 @@ from src.ui.ui_commands import UICommands
 
 logger = logging.getLogger(__name__)
 
+
 class Interface:
     """Main user interface class (using Tkinter)."""
 
-    def __init__(self, scheduler: Optional[Scheduler] = None, shutdown_callback: Optional[Callable[[], None]] = None):
+    def __init__(
+        self,
+        scheduler: Optional[Scheduler] = None,
+        shutdown_callback: Optional[Callable[[], None]] = None,
+    ):
         """
         Initialize the interface.
 
@@ -51,11 +60,13 @@ class Interface:
         self.root.title("Dev Monitor")
         # bind close to allow graceful shutdown of background services
         if self.shutdown_callback:
+
             def _on_close():
                 try:
                     self.shutdown_callback()
                 finally:
                     self.root.destroy()
+
             self.root.protocol("WM_DELETE_WINDOW", _on_close)
         self._build_ui()
         self._setup_event_handlers()
@@ -73,26 +84,46 @@ class Interface:
         self.root.columnconfigure(0, weight=1)
 
         # Device list
-        self.device_list_widget = DeviceListWidget(frame, height=12, width=60)
-        self.device_list_widget.grid(row=0, column=0, sticky="ew", padx=(8, 0), pady=(8,0))
+        self.device_list_widget = DeviceListWidget(
+            frame, height=12, width=60
+        )
+        self.device_list_widget.grid(
+            row=0,
+            column=0,
+            sticky="ew",
+            padx=(8, 0),
+            pady=(8, 0),
+        )
 
         # Buttons
-        add_btn = TtkButton(frame, text="Add Device", command=self._on_add_device)
+        add_btn = TtkButton(
+            frame, text="Add Device", command=self._on_add_device
+        )
         add_btn.grid(row=1, column=0, sticky="ew", pady=(8, 0))
 
-        remove_btn = TtkButton(frame, text="Remove Selected", command=self._on_remove_selected)
-        remove_btn.grid(row=1, column=1, sticky="ew", padx=(8, 0), pady=(8,0))
+        remove_btn = TtkButton(
+            frame, text="Remove Selected", command=self._on_remove_selected
+        )
+        remove_btn.grid(row=1, column=1, sticky="ew", padx=(8, 0), pady=(8, 0))
 
-        check_btn = TtkButton(frame, text="Check All", command=self._on_check_all)
+        check_btn = TtkButton(
+            frame, text="Check All", command=self._on_check_all
+        )
         check_btn.grid(row=1, column=2, sticky="ew", padx=(8, 0), pady=(8, 0))
 
-        refresh_btn = TtkButton(frame, text="Refresh", command=self._on_refresh)
-        refresh_btn.grid(row=1, column=3, sticky="ew", padx=(8, 0), pady=(8, 0))
+        refresh_btn = TtkButton(
+            frame, text="Refresh", command=self._on_refresh
+        )
+        refresh_btn.grid(
+            row=1, column=3, sticky="ew", padx=(8, 0), pady=(8, 0)
+        )
 
         # Status label
         self.status_var = StringVar(value="Ready")
         status_label = TtkLabel(frame, textvariable=self.status_var)
-        status_label.grid(row=2, column=0, columnspan=4, sticky="w", pady=(8, 0))
+        status_label.grid(
+            row=2, column=0, columnspan=4, sticky="w", pady=(8, 0)
+        )
 
         # Layout configuration
         frame.rowconfigure(0, weight=1)
@@ -109,15 +140,10 @@ class Interface:
         assert self.status_var is not None
 
         self.commands = UICommands(
-            self.scheduler,
-            self.root,
-            self.status_var,
-            self._refresh_devices
+            self.scheduler, self.root, self.status_var, self._refresh_devices
         )
         self.event_handlers = UIEventHandlers(
-            self.scheduler,
-            self.root,
-            self._refresh_devices
+            self.scheduler, self.root, self._refresh_devices
         )
 
     def _refresh_devices(self) -> None:

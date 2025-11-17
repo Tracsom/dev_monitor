@@ -4,8 +4,8 @@ Logging configuration and utilities.
 """
 import logging
 import logging.handlers
-from pathlib import Path
 from src.config import Config
+
 
 def setup_logging(debug: bool = False) -> None:
     """
@@ -18,7 +18,11 @@ def setup_logging(debug: bool = False) -> None:
     Config.LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 
     # Set level
-    level = logging.DEBUG if debug else getattr(logging, Config.LOG_LEVEL, logging.INFO)
+    level = (
+        logging.DEBUG
+        if debug
+        else getattr(logging, Config.LOG_LEVEL, logging.INFO)
+    )
 
     # Set formatter
     formatter = logging.Formatter(Config.LOG_FORMAT)
@@ -40,7 +44,7 @@ def setup_logging(debug: bool = False) -> None:
     file_handler = logging.handlers.RotatingFileHandler(
         Config.LOG_FILE,
         maxBytes=Config.LOG_MAX_BYTES,
-        backupCount=Config.LOG_BACKUP_COUNT
+        backupCount=Config.LOG_BACKUP_COUNT,
     )
     file_handler.setLevel(level)
     file_handler.setFormatter(formatter)

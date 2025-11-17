@@ -4,6 +4,7 @@ Event class for bus operations.
 """
 from typing import Callable, Any
 
+
 class Event:
     """Represents a publishable event with a callback handler."""
 
@@ -23,11 +24,11 @@ class Event:
 
     def __repr__(self):
         return f"Event(name={self.name}, callback={self.callback.__name__})"
-    
+
     def trigger(self, *args, **kwargs):
         """
         Trigger the event's callback with provided arguments.
-        
+
         Args:
             *args: Positional arguments for the callback
             **kwargs: Keyword arguments for the callback
