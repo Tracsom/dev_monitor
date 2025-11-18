@@ -65,7 +65,11 @@ class UICommands:
         device_name = get_selected_name()
         if not device_name:
             DialogManager.show_warning(
-                self.parent, "Remove device", "No device selected"
+                "Remove device", 
+                "No device selected",
+                status_var=self.status_var,
+                parent=self.parent,
+                modal=False
             )
             return
 
@@ -101,4 +105,6 @@ class UICommands:
 
     def refresh(self) -> None:
         """Handle refresh command."""
+        self.status_var.set("Refreshing device list...")
         self.refresh_callback()
+        self.status_var.set("Device list refreshed")

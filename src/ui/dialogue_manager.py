@@ -4,8 +4,8 @@ Dialog utilities for user input and feedback.
 """
 import logging
 from tkinter import simpledialog, messagebox
-from tkinter import Tk
-from typing import Optional, Tuple
+from tkinter import Tk, StringVar
+from typing import Optional, Tuple, Callable
 
 logger = logging.getLogger(__name__)
 
@@ -76,37 +76,79 @@ class DialogManager:
         )
 
     @staticmethod
-    def show_success(parent: Tk, title: str, message: str) -> None:
+    def show_success(
+        title: str, 
+        message: str, 
+        status_var: Optional[StringVar] = None,
+        parent: Optional[Tk] = None,
+        modal: bool = False,
+    ) -> None:
         """
-        Show success message.
+        Shows success message.
 
         Args:
-            parent: Parent window
             title: Dialog title
             message: Message text
+            status_var: Optional StringVar to update status bar
+            parent: Optional parent window (required if modal=True)
+            modal: If True, show modal dialog; else update status bar
         """
-        messagebox.showinfo(title, message, parent=parent)
+        if modal and parent:
+            messagebox.showinfo(title, message, parent=parent)
+        elif status_var:
+            status_var.set(f"✓ {message}")
+            logger.debug(f"Status: {message}")
+        else:
+            logger.info(f"{title}: {message}")
 
     @staticmethod
-    def show_error(parent: Tk, title: str, message: str) -> None:
+    def show_error(
+        title: str, 
+        message: str, 
+        status_var: Optional[StringVar] = None,
+        parent: Optional[Tk] = None,
+        modal: bool = False,
+    ) -> None:
         """
         Show error message.
 
         Args:
-            parent: Parent window
             title: Dialog title
             message: Message text
+            status_var: Optional StringVar to update status bar
+            parent: Optional parent window (required if modal=True)
+            modal: If True, show modal dialog; else update status bar
         """
-        messagebox.showerror(title, message, parent=parent)
+        if modal and parent:
+            messagebox.showerror(title, message, parent=parent)
+        elif status_var:
+            status_var.set(f"x Error: {message}")
+            logger.error(f"{title}: {message}")
+        else:
+            logger.error(f"{title}: {message}")
 
     @staticmethod
-    def show_warning(parent: Tk, title: str, message: str) -> None:
+    def show_warning(
+        title: str, 
+        message: str, 
+        status_var: Optional[StringVar] = None,
+        parent: Optional[Tk] = None,
+        modal: bool = False,
+    ) -> None:
         """
         Show warning message.
 
         Args:
-            parent: Parent window
             title: Dialog title
             message: Message text
+            status_var: Optional StringVar to update status bar
+            parent: Optional parent window (required if modal=True)
+            modal: If True, show modal dialog; else update status bar
         """
-        messagebox.showwarning(title, message, parent=parent)
+        if modal and parent:
+            messagebox.showwarning(title, message, parent=parent)
+        elif status_var:
+            status_var.set(f"⚠ Warning: {message}")
+            logger.warning(f"{title}: {message}")
+        else:
+            logger.warning(f"{title}: {message}")

@@ -152,7 +152,10 @@ class Interface:
             disable_buttons_callback=self._disable_action_buttons,
         )
         self.event_handlers = UIEventHandlers(
-            self.scheduler, self.root, self._refresh_devices
+            self.scheduler, 
+            self.root, 
+            self._refresh_devices,
+            self.status_var
         )
 
     def _disable_action_buttons(self, disable: bool) -> None:
