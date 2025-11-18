@@ -3,8 +3,8 @@
 Custom Tkinter widgets for the application
 """
 import logging
-from tkinter import Listbox, Frame
-from tkinter.ttk import Scrollbar
+from tkinter import Listbox, Frame, Scrollbar
+from tkinter.ttk import Scrollbar as TtkScrollbar
 from typing import List, Optional, Callable
 from src.models import Device
 
@@ -22,21 +22,30 @@ class DeviceListWidget(Frame):
             parent: Parent widget
             height: Number of visible rows
             width: Width in characters
-            **kwargs: Additional frame arguments
         """
         super().__init__(parent, **kwargs)
+        self.parent = parent
+        self.height = height
+        self.width = width
+        self.selected_index: Optional[int] = None
 
-        self.listbox = Listbox(self, height=height, width=width)
-        self.listbox.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
+        # Create listbox with scrollbar
+        scrollbar = TtkScrollbar(self)
+        scrollbar.pack(side="right", fill="y")
 
-        scrollbar = Scrollbar(
-            self, orient="vertical", command=self.listbox.yview
+        self.listbox = Listbox(
+            self,
+            yscrollcommand=scrollbar.set,
+            height=height,
+            width=width,
+            font=("Courier", 10),
         )
-        scrollbar.grid(row=0, column=1, sticky="ns")
-        self.listbox.config(yscrollcommand=scrollbar.set)
+        self.listbox.pack(side="left", fill="both", expand=True)
+        scrollbar.config(command=self.listbox.yview)
 
-        self.rowconfigure(0, weight=1)
-        self.columnconfigure(0, weight=1)
+        # Bind selection
+        self.listbox.bind("<<ListboxSelect>>", self._on_select)
+        logger.debug("DeviceListWidget intitialized")
 
     def populate(self, devices: List[Device]) -> None:
         """
@@ -61,10 +70,15 @@ class DeviceListWidget(Frame):
         selection = self.listbox.curselection()
         if not selection:
             return None
-
-        line = self.listbox.get(selection[0])
-        parts = line.split(" - ")
-        return parts[0] if parts else None
+        index = selection[0]
+        line = self.listbox.get(index)
+        # Parse device name from formatted line
+        # Format: "router | 192.168.0.1:80 | 🟢"
+        if " | " in line:
+            parts = line.split(" | ")
+            name_part = parts[0].strip()
+            return name_part
+        return None
 
     def bind_double_click(self, callback: Callable) -> None:
         """
@@ -78,14 +92,24 @@ class DeviceListWidget(Frame):
     @staticmethod
     def _format_device_line(device: Device) -> str:
         """Format device for display in list."""
-        status = (
-            "Online"
+        status_icons = {
+            "online": "🟢",
+            "offline": "🔴",
+            "unknown": "⚪"
+        }
+        status_key = (
+            "online"
             if device.is_online
-            else "Offline"
+            else "offline"
             if device.is_online is False
-            else "Unknown"
+            else "unknown"
         )
-        return (
-            f"{device.name} - {device.ip_address}:{device.port} - {status} - "
-            f"Last checked: {device.last_checked or 'never'}"
-        )
+        icon = status_icons.get(status_key)
+        return f"{device.name} | {device.ip_address}:{device.port} | {icon} ({status_key})"
+    
+    def _on_select(self, event) -> None:
+        """Handle list selection event."""
+        selection = self.listbox.curselection()
+        if selection:
+            self.selected_index = selection[0]
+            logger.debug(f"Device selected at index {self.selected_index}")
