@@ -134,28 +134,33 @@ class Interface:
         self.progress_manager = ProgressManager(frame)
 
         # Buttons
+        button_frame = TtkFrame(frame)
+        button_frame.grid(row=2, column=0, columnspan=4, sticky="ew", pady=(8, 0))
+        button_frame.columnconfigure(0, weight=1)
+        button_frame.columnconfigure(1, weight=1)
+
         add_btn = TtkButton(
-            frame, text="Add Device", command=self._on_add_device
+            button_frame, text="Add Device", command=self._on_add_device
         )
-        add_btn.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        add_btn.grid(row=0, column=0, sticky="ew", padx=(0, 8))
         self._action_buttons.append(add_btn)
 
         remove_btn = TtkButton(
-            frame, text="Remove Selected", command=self._on_remove_selected
+            button_frame, text="Remove Selected", command=self._on_remove_selected
         )
-        remove_btn.grid(row=2, column=1, sticky="ew", padx=(8, 0), pady=(8, 0))
+        remove_btn.grid(row=0, column=1, sticky="ew", padx=(8, 0))
         self._action_buttons.append(remove_btn)
 
         check_btn = TtkButton(
-            frame, text="Check All", command=self._on_check_all
+            button_frame, text="Check All", command=self._on_check_all
         )
-        check_btn.grid(row=2, column=2, sticky="ew", padx=(8, 0), pady=(8, 0))
+        check_btn.grid(row=1, column=0, sticky="ew", padx=(0, 8), pady=(8, 0))
         self._action_buttons.append(check_btn)
 
         refresh_btn = TtkButton(
-            frame, text="Refresh", command=self._on_refresh
+            button_frame, text="Refresh", command=self._on_refresh
         )
-        refresh_btn.grid(row=2, column=3, sticky="ew", padx=(8, 0), pady=(8, 0))
+        refresh_btn.grid(row=1, column=1, sticky="ew", padx=(8, 0), pady=(8, 0))
         self._action_buttons.append(refresh_btn)
 
         # Status label
