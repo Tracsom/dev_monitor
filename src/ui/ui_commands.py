@@ -81,6 +81,14 @@ class UICommands:
 
     def check_all(self) -> None:
         """Handle check all devices command."""
+        # Confirm if there are many devices to avoid accidental log operations
+        devices = self.scheduler.publish("get_devices")
+        count = 0
+        if devices and isinstance(devices[0], list):
+            count = len(devices)
+        if count > 50:
+            if not DialogManager.confirm_remove(self.parent, f"Run checks on {count} devices?"):
+                return
         def worker():
             # show progress and disable buttons
             if self.progress_manager:

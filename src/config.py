@@ -14,6 +14,7 @@ class Config:
     APP_DIR = Path.home() / ".dev_monitor"
     DEVICES_FILE = APP_DIR / "devices.json"
     LOG_FILE = APP_DIR / "app.log"
+    UI_STATE_FILE = APP_DIR / "ui_state.json"
 
     # Defaults
     DEFAULT_PORT = 80
